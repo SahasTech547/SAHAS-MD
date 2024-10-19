@@ -1,55 +1,64 @@
-const {cmd , commands} = require('../command');
-const { igdl } = require('ruhend-scraper');
+const config = require('../config');
+const { Sticker, StickerTypes } = require('wa-sticker-formatter');
+const { cmd } = require('../command');
+const { getRandom } = require('../lib/functions');
+const fs = require('fs').promises;
+
+let imgmsg = config.LANG === 'SI' ? 'ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴘʜᴏᴛᴏ!' : 'ʀᴇᴘʏ ᴛᴏ ᴀ ᴘʜᴏᴛᴏ ғᴏʀ sᴛɪᴄᴋᴇʀ!';
+let descg = config.LANG === 'SI' ? 'Sticker Converting...' : 'ɪᴛ ᴄᴏɴᴠᴇʀᴛs ʏᴏᴜʀ ʀᴇᴘʟɪᴇᴅ ᴘʜᴏᴛᴏ ᴛᴏ sᴛɪᴄᴋᴇʀ.';
 
 cmd({
-    pattern: "ig",
-    desc: "To download instagram videos.",
-    category: "download",
+    pattern: 'sticker',
+    react: '💦',
+    alias: ['s', 'stic'],
+    desc: descg,
+    category: 'convert',
+    use: '.sticker <Reply to image>',
     filename: __filename
-},
-async(conn, mek, m,{from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply}) => {
-try{
+}, async (conn, mek, m, { from, reply, command, q, pushname }) => {
+    try {
+        const isQuotedImage = m.quoted && (m.quoted.type === 'imageMessage' || (m.quoted.type === 'viewOnceMessage' && m.quoted.msg.type === 'imageMessage'));
+        const isQuotedSticker = m.quoted && m.quoted.type === 'stickerMessage';
 
-  if (!args[0]) {
-    return reply('*`ρℓєαѕє gινє α ωαιℓ∂ ιηѕтαgяαм ℓιηк`*');
-  }
+        if (m.type === 'imageMessage' || isQuotedImage) {
+            const nameJpg = getRandom('.jpg');
+            const imageBuffer = isQuotedImage ? await m.quoted.download() : await m.download();
+            await fs.writeFile(nameJpg, imageBuffer);
 
-  await m.react('🕒');
-  let res;
-  try {
-    res = await igdl(args[0]);
-  } catch (error) {
-    return reply('*`єяяσя σвтαιηιηg ∂αтα.`*');
-  }
+            let sticker = new Sticker(nameJpg, {
+                pack: pushname,
+                author: '',
+                type: q.includes('--crop') || q.includes('-c') ? StickerTypes.CROPPED : StickerTypes.FULL,
+                categories: ['🤩', '🎉'],
+                id: '12345',
+                quality: 75,
+                background: 'transparent',
+            });
 
-  let result = res.data;
-  if (!result || result.length === 0) {
-    return reply('*`ησ яєѕυℓт ƒσυη∂.`*');
-  }
+            const buffer = await sticker.toBuffer();
+            return conn.sendMessage(from, { sticker: buffer }, { quoted: mek });
+        } else if (isQuotedSticker) {
+            const nameWebp = getRandom('.webp');
+            const stickerBuffer = await m.quoted.download();
+            await fs.writeFile(nameWebp, stickerBuffer);
 
-  let data;
-  try {
-    data = result.find(i => i.resolution === "720p (HD)") || result.find(i => i.resolution === "360p (SD)");
-  } catch (error) {
-    return reply('*`єяяσя ∂αтα ℓσѕѕ.`*');
-  }
+            let sticker = new Sticker(nameWebp, {
+                pack: pushname,
+                author: 'SAHAS-MD',
+                type: q.includes('--crop') || q.includes('-c') ? StickerTypes.CROPPED : StickerTypes.FULL,
+                categories: ['🤩', '🎉'],
+                id: '12345',
+                quality: 75,
+                background: 'transparent',
+            });
 
-  if (!data) {
-    return reply('*`ησ ∂αтα ƒσυη∂.`*');
-  }
-
-  await m.react('✅');
-  let video = data.url;
-  let dev = '> *©ᴘᴏᴡᴇʀᴇᴅ ʙʏ ꜱᴀʜᴀꜱ ᴛᴇᴄʜ*'
-  
-  try {
-    await conn.sendMessage(m.chat, { video: { url: video }, caption: dev, fileName: 'ig.mp4', mimetype: 'video/mp4' }, { quoted: m });
-  } catch (error) {
-    return reply('*`єяяσя ∂σωηℓσα∂ νι∂єσ.`*');
-  await m.react('❌');
-  }
-}catch(e){
-console.log(e)
-  reply(`${e}`)
-}
+            const buffer = await sticker.toBuffer();
+            return conn.sendMessage(from, { sticker: buffer }, { quoted: mek });
+        } else {
+            return reply(imgmsg);
+        }
+    } catch (e) {
+        console.error(e);
+        return reply('*Error!!*');
+    }
 });
