@@ -4,7 +4,7 @@ const EnvVar = require('../lib/mongodbenv');
 
 cmd({
     pattern: "settings",
-    alias: ["setting","s"],
+    alias: ["setting"],
     desc: "Check bot online or not.",
     category: "main",
     filename: __filename
