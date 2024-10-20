@@ -29,7 +29,6 @@ let des = `*👋 Hello ${pushname} I'm alive now*
 > *©ᴘᴏᴡᴇʀᴇᴅ ʙʏ ꜱᴀʜᴀꜱ ᴛᴇᴄʜ*
 `
 await conn.sendMessage(from, {
-text: commandList,
   contextInfo: {
     mentionedJid: [ '' ],
     groupMentions: [],
